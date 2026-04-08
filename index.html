@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Tome</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --bg2: #161618;
+    --bg3: #1e1e22;
+    --border: #2a2a30;
+    --text: #e8e4dc;
+    --muted: #6b6870;
+    --accent: #c9a96e;
+    --accent2: #7b9e87;
+    --accent3: #c47e7e;
+    --begun: #7b9e87;
+    --completed: #c9a96e;
+    --iterating: #8b78c9;
+    --inactive: #3a3840;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 2.5rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .subtitle {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* FILTER ROW */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .filter-btn {
+    padding: 3px 10px;
+    font-size: 0.65rem;
+    font-family: inherit;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .filter-btn.active, .filter-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+  .filter-sep { width: 1px; height: 16px; background: var(--border); }
+
+  /* TIME FILTER */
+  .time-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  .time-filter-btn {
+    padding: 3px 10px;
+    font-size: 0.65rem;
+    font-family: inherit;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .time-filter-btn.active { background: var(--iterating); color: #fff; border-color: var(--iterating); }
+  .time-filter-btn:hover { border-color: var(--iterating); color: var(--text); }
+
+  /* TIMERS */
+  .timers-bar {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .timer-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.85rem;
+  }
+  .timer-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .timer-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    min-width: 4.5rem;
+    text-align: center;
+  }
+  .timer-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .timer-btn:hover { color: var(--text); border-color: var(--accent); }
+  .timer-btn.running { color: var(--accent3); border-color: var(--accent3); }
+  .countdown-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.7rem;
+    padding: 3px 6px;
+    border-radius: 3px;
+    width: 55px;
+    text-align: center;
+  }
+  .countdown-input:focus { outline: none; border-color: var(--accent); }
+
+  /* MAIN CONTENT */
+  .main { padding: 1.5rem 2rem; max-width: 900px; }
+
+  /* TOME ITEM */
+  .tome-item {
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg2);
+    transition: border-color 0.2s, opacity 0.2s;
+    overflow: hidden;
+  }
+  .tome-item.status-inactive {
+    opacity: 0.4;
+    border-color: transparent;
+    background: var(--bg);
+  }
+  .tome-item.status-completed { border-color: rgba(201,169,110,0.3); }
+  .tome-item.status-begun { border-color: rgba(123,158,135,0.3); }
+  .tome-item.status-iterating { border-color: rgba(139,120,201,0.3); }
+
+  /* ITEM HEADER */
+  .item-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .item-num {
+    font-size: 0.65rem;
+    color: var(--muted);
+    min-width: 1.5rem;
+    padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .item-title {
+    flex: 1;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  .item-preview {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    display: block;
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+  .status-badges {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .status-badge {
+    padding: 2px 8px;
+    font-size: 0.6rem;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: inherit;
+    background: none;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .status-badge:hover { border-color: var(--border); color: var(--text); }
+  .status-badge.active-begun { background: rgba(123,158,135,0.15); color: var(--begun); border-color: var(--begun); }
+  .status-badge.active-completed { background: rgba(201,169,110,0.15); color: var(--completed); border-color: var(--completed); }
+  .status-badge.active-inactive { background: rgba(58,56,64,0.5); color: var(--muted); border-color: var(--inactive); }
+  .status-badge.active-iterating { background: rgba(139,120,201,0.15); color: var(--iterating); border-color: var(--iterating); }
+  .collapse-arrow {
+    font-size: 0.6rem;
+    color: var(--muted);
+    transition: transform 0.2s;
+    margin-top: 4px;
+  }
+  .collapse-arrow.open { transform: rotate(90deg); }
+
+  /* EXPANDED CONTENT */
+  .item-body {
+    display: none;
+    padding: 0 1rem 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .item-body.open { display: block; }
+
+  /* NOTES */
+  .section-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin: 0.85rem 0 0.4rem;
+  }
+  .notes-area {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    padding: 0.6rem 0.75rem;
+    resize: vertical;
+    min-height: 60px;
+    transition: border-color 0.15s;
+  }
+  .notes-area:focus { outline: none; border-color: var(--accent); }
+
+  /* LINKS */
+  .links-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .link-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.65rem;
+    color: var(--accent);
+    text-decoration: none;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .link-chip:hover { border-color: var(--accent); }
+  .link-remove { cursor: pointer; color: var(--muted); font-size: 0.7rem; flex-shrink: 0; }
+  .link-remove:hover { color: var(--accent3); }
+  .link-add-row { display: flex; gap: 6px; }
+  .small-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .small-input:focus { outline: none; border-color: var(--accent); }
+  .small-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .small-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* TODOS */
+  .todo-list { list-style: none; margin-bottom: 6px; }
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .todo-item:last-child { border-bottom: none; }
+  .todo-check {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .todo-check.done { background: var(--accent); border-color: var(--accent); }
+  .todo-check.done::after { content: '✓'; font-size: 0.55rem; color: var(--bg); }
+  .todo-text {
+    flex: 1;
+    font-size: 0.75rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .todo-text.done { text-decoration: line-through; color: var(--muted); }
+  .todo-time-badge {
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .todo-delete {
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0 2px;
+  }
+  .todo-delete:hover { color: var(--accent3); }
+  .todo-add-row { display: flex; gap: 6px; align-items: center; }
+  .time-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.65rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .time-select:focus { outline: none; border-color: var(--accent); }
+
+  /* HIGHLIGHTED todos from time filter */
+  .todo-item.highlight-time {
+    background: rgba(139,120,201,0.1);
+    border-radius: 4px;
+    padding-left: 6px;
+    margin-left: -6px;
+  }
+
+  /* CANVAS for confetti/stars/fire */
+  #fx-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  @media (max-width: 600px) {
+    .header, .main { padding-left: 1rem; padding-right: 1rem; }
+    .timers-bar { padding: 0.5rem 1rem; }
+    h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fx-canvas"></canvas>
+
+<div class="header">
+  <div class="header-top">
+    <h1>The Tome</h1>
+    <span class="subtitle">signal from noise · project tracker</span>
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">filter:</span>
+    <button class="filter-btn active" onclick="setFilter('all', this)">all</button>
+    <button class="filter-btn" onclick="setFilter('begun', this)">begun</button>
+    <button class="filter-btn" onclick="setFilter('completed', this)">completed</button>
+    <button class="filter-btn" onclick="setFilter('iterating', this)">iterating</button>
+    <div class="filter-sep"></div>
+    <span class="filter-label">show inactive:</span>
+    <button class="filter-btn" id="inactive-toggle" onclick="toggleInactive(this)">off</button>
+  </div>
+  <div class="time-filter-row">
+    <span class="filter-label">surface todos ≤:</span>
+    <button class="time-filter-btn" onclick="setTimeFilter(5, this)">5 min</button>
+    <button class="time-filter-btn" onclick="setTimeFilter(10, this)">10 min</button>
+    <button class="time-filter-btn" onclick="setTimeFilter(30, this)">30 min</button>
+    <button class="time-filter-btn" onclick="setTimeFilter(60, this)">1 hr</button>
+    <button class="time-filter-btn" onclick="setTimeFilter(180, this)">3 hr</button>
+    <button class="time-filter-btn" onclick="setTimeFilter(0, this)">clear</button>
+  </div>
+</div>
+
+<div class="timers-bar">
+  <!-- Pomodoro -->
+  <div class="timer-block">
+    <div>
+      <div class="timer-label">pomodoro</div>
+      <div class="timer-display" id="pomo-display">25:00</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <button class="timer-btn" id="pomo-btn" onclick="togglePomo()">start</button>
+      <button class="timer-btn" onclick="resetPomo()">reset</button>
+      <select class="time-select" onchange="setPomoLength(this.value)" style="font-size:0.6rem">
+        <option value="25">25m</option>
+        <option value="15">15m</option>
+        <option value="45">45m</option>
+        <option value="52">52m</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Countdown -->
+  <div class="timer-block">
+    <div>
+      <div class="timer-label">countdown</div>
+      <div class="timer-display" id="countdown-display">00:00</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <button class="timer-btn" id="countdown-btn" onclick="toggleCountdown()">start</button>
+      <button class="timer-btn" onclick="resetCountdown()">reset</button>
+      <div style="display:flex;gap:3px;align-items:center">
+        <input class="countdown-input" id="countdown-mins" type="number" min="1" max="180" value="10" placeholder="min">
+        <span style="font-size:0.6rem;color:var(--muted)">m</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main" id="main-list"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────
+const TOMES = [
+  { id: 1, num: "01", title: "Happy Suicide Murder Death Cult", preview: "" },
+  { id: 2, num: "02", title: "After promising Nirvana, Buddha reincarnates.", preview: "He's now a woman & unsure what to do. (novel)" },
+  { id: 3, num: "03", title: "Zen Monks playing who's line?", preview: "Anti-absurdist neocontemporary conformism as a 'shrug' when someone tries to take existentialism deeper." },
+  { id: 4, num: "04", title: "Unconditional love found when playing the world's most toxic video game with a mentally ill friend.", preview: "" },
+  { id: 5, num: "05", title: "Girl who would be king.", preview: "Commentary on Matriarchy v Patriarchy. Functional patriarchy occurring only when hiding/killing those it does not function for." },
+  { id: 6, num: "06", title: "Killer God/God Killer", preview: '"Yahweh" turns his cult into food source for unlimited Cosmic Power by killing off the other Gods & posing as the only Deity. As penance becomes Jesus.' },
+  { id: 7, num: "07", title: "Tristen I love you.", preview: "" },
+  { id: 8, num: "08", title: "Shayna you have a perfect heart and an even better ass.", preview: "" },
+  { id: 9, num: "09", title: "Amos. Algorithm for atomic silence?", preview: "" },
+  { id: 10, num: "10", title: "IKYFL (I know you fuckin lying) Chester Day 4", preview: "" },
+  { id: 11, num: "11", title: "Niggah w/ the peanut butter", preview: "" },
+  { id: 12, num: "12", title: "Different Versions of Death Cult.", preview: "Capitalism — poor people selling themselves so rich people can live out the highs of their deaths." },
+  { id: 13, num: "12b", title: "Billionaires need to do Vipassana.", preview: "Elon has to make it to Day 6." },
+  { id: 14, num: "13", title: "Mother and Son Parable", preview: "Boy one: glass half empty. Boy two: glass half full. Boy Vipassana: works to make up loss. Me: designs an unbreakable pot." },
+  { id: 15, num: "14", title: "Control Freak Brunettes.", preview: "Neurodivergent. Upset that you don't mask as they do — but also upset that you don't reward them for masking." },
+  { id: 16, num: "15", title: "You never stopped loving anyone, somehow it upsets them.", preview: "" },
+  { id: 17, num: "16", title: "Solidarity not charity = powerful", preview: "" },
+  { id: 18, num: "17", title: "Ignorance.", preview: "Kind to the ignorant. Honest about your own. Notice who is disrespectful when they believe they have knowledge/power." },
+  { id: 19, num: "18", title: "Compassion is the Wisdom.", preview: "Who is still kind when they think they are off the hook? When triggered." },
+  { id: 20, num: "19", title: "Fossil Record.", preview: "Humans are liquid crystalline beings cause water." },
+  { id: 21, num: "20", title: "Enlightenment is a finite game answer to an infinite game problem.", preview: "When you understand everything is change, Creation and Destruction are perspectives." },
+  { id: 22, num: "21", title: "Achieve peace and there will be dynamic harmony within you", preview: "Let aversion & craving be dharma. Not dogma. Let all action be an invitation to or expression of Dharma." },
+  { id: 23, num: "22", title: "Haily's 'erase me' button.", preview: "She finally meets someone else who would delete themselves but they don't feel that way anymore... She's left holding the button." },
+  { id: 24, num: "23", title: "Having conflict management knowledge sometimes leads to scenarios where one person believes they are fighting fire with fire while the other person is unfortunately trying to reason with an inferno.", preview: "" },
+  { id: 25, num: "24", title: "I build the world I want to live in.", preview: "Some fight against the world they feel trapped in. When these things look the same they see me as a friend." },
+  { id: 26, num: "25", title: "I have deconstructed the labels you've been forced to see yourself through.", preview: "Unfortunately, you believe yours is the only way to see. This is a failure of cognitive empathy." },
+  { id: 27, num: "26", title: "Survey of women and girls about desire to be a parent and the experience of becoming a parent", preview: "30 year study ages 5-35. Parameters: joy, desire, fulfillment, capability, self-reflection, predictions, letters to future self." },
+  { id: 28, num: "27", title: "Vipassana has become the cult of Goenka.", preview: "Even if it started with Gotama Buddha and is 'non-sectarian'..." },
+  { id: 29, num: "28", title: "Ori Story time.", preview: "" },
+  { id: 30, num: "29", title: "Patriarchy uses perfectionism to stymy any change that is not improving the dominator's position within the status quo.", preview: "Transformative Justice will be resisted because it demands accountability to harm and shifts in power." },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────
+let state = loadState();
+let activeFilter = 'all';
+let showInactive = false;
+let activeTimeFilter = 0;
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('tome-state');
+    return s ? JSON.parse(s) : {};
+  } catch(e) { return {}; }
+}
+
+function saveState() {
+  localStorage.setItem('tome-state', JSON.stringify(state));
+}
+
+function getItem(id) {
+  if (!state[id]) state[id] = { status: 'none', notes: '', links: [], todos: [], open: false };
+  return state[id];
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────
+function render() {
+  const container = document.getElementById('main-list');
+  container.innerHTML = '';
+
+  const filtered = TOMES.filter(t => {
+    const item = getItem(t.id);
+    if (item.status === 'inactive' && !showInactive) return false;
+    if (activeFilter !== 'all' && item.status !== activeFilter) return false;
+    return true;
+  });
+
+  filtered.forEach(t => {
+    const item = getItem(t.id);
+    const el = document.createElement('div');
+    el.className = `tome-item status-${item.status || 'none'}`;
+    el.id = `item-${t.id}`;
+
+    // Check if any todos match time filter
+    let hasTimeMatch = false;
+    if (activeTimeFilter > 0) {
+      hasTimeMatch = item.todos && item.todos.some(td => !td.done && td.time <= activeTimeFilter);
+    }
+
+    el.innerHTML = `
+      <div class="item-header" onclick="toggleCollapse(${t.id}, event)">
+        <span class="item-num">${t.num}</span>
+        <div class="item-title">
+          ${t.title}
+          ${t.preview ? `<span class="item-preview">${t.preview}</span>` : ''}
+          ${hasTimeMatch ? `<span style="font-size:0.55rem;color:var(--iterating);margin-left:6px">● tasks ready</span>` : ''}
+        </div>
+        <div class="status-badges" onclick="event.stopPropagation()">
+          <button class="status-badge ${item.status==='begun'?'active-begun':''}" onclick="setStatus(${t.id},'begun')">begun</button>
+          <button class="status-badge ${item.status==='completed'?'active-completed':''}" onclick="setStatus(${t.id},'completed')">done</button>
+          <button class="status-badge ${item.status==='iterating'?'active-iterating':''}" onclick="setStatus(${t.id},'iterating')">iterating</button>
+          <button class="status-badge ${item.status==='inactive'?'active-inactive':''}" onclick="setStatus(${t.id},'inactive')">inactive</button>
+        </div>
+        <span class="collapse-arrow ${item.open?'open':''}">▶</span>
+      </div>
+      <div class="item-body ${item.open?'open':''}" id="body-${t.id}">
+        <div class="section-label">notes</div>
+        <textarea class="notes-area" placeholder="persistent notes..." oninput="saveNotes(${t.id}, this.value)">${item.notes||''}</textarea>
+
+        <div class="section-label">links</div>
+        <div class="links-container" id="links-${t.id}">
+          ${renderLinks(t.id)}
+        </div>
+        <div class="link-add-row">
+          <input class="small-input" id="link-url-${t.id}" placeholder="https://..." type="url">
+          <input class="small-input" id="link-label-${t.id}" placeholder="label" style="max-width:120px">
+          <button class="small-btn" onclick="addLink(${t.id})">+ link</button>
+        </div>
+
+        <div class="section-label">to-dos</div>
+        <ul class="todo-list" id="todos-${t.id}">
+          ${renderTodos(t.id)}
+        </ul>
+        <div class="todo-add-row">
+          <input class="small-input" id="todo-text-${t.id}" placeholder="task..." onkeydown="if(event.key==='Enter')addTodo(${t.id})">
+          <select class="time-select" id="todo-time-${t.id}">
+            <option value="5">5m</option>
+            <option value="10">10m</option>
+            <option value="15">15m</option>
+            <option value="20">20m</option>
+            <option value="30">30m</option>
+            <option value="45">45m</option>
+            <option value="60">60m</option>
+            <option value="90">90m</option>
+            <option value="120">120m</option>
+            <option value="180">180m</option>
+          </select>
+          <button class="small-btn" onclick="addTodo(${t.id})">+ task</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+}
+
+function renderLinks(id) {
+  const item = getItem(id);
+  return (item.links||[]).map((l,i) => `
+    <a href="${l.url}" target="_blank" class="link-chip" title="${l.url}">
+      🔗 ${l.label||l.url.slice(0,30)}
+      <span class="link-remove" onclick="removeLink(${id},${i});event.preventDefault()">✕</span>
+    </a>
+  `).join('');
+}
+
+function renderTodos(id) {
+  const item = getItem(id);
+  const todos = item.todos || [];
+  // sort: time filter matches first, then undone, then done
+  let sorted = [...todos.map((t,i)=>({...t,_idx:i}))];
+  if (activeTimeFilter > 0) {
+    sorted.sort((a,b) => {
+      const aMatch = !a.done && a.time <= activeTimeFilter;
+      const bMatch = !b.done && b.time <= activeTimeFilter;
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return a.time - b.time;
+    });
+  }
+  return sorted.map(td => {
+    const isHighlight = activeTimeFilter > 0 && !td.done && td.time <= activeTimeFilter;
+    return `
+    <li class="todo-item ${isHighlight?'highlight-time':''}">
+      <div class="todo-check ${td.done?'done':''}" onclick="toggleTodo(${id},${td._idx})"></div>
+      <span class="todo-text ${td.done?'done':''}">${td.text}</span>
+      <span class="todo-time-badge">${formatTime(td.time)}</span>
+      <span class="todo-delete" onclick="deleteTodo(${id},${td._idx})">✕</span>
+    </li>`;
+  }).join('');
+}
+
+function formatTime(m) {
+  if (m < 60) return m+'m';
+  const h = Math.floor(m/60), min = m%60;
+  return min ? `${h}h${min}m` : `${h}h`;
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────
+function toggleCollapse(id, e) {
+  const item = getItem(id);
+  item.open = !item.open;
+  saveState();
+  // partial re-render just this item's arrow and body
+  const arrow = document.querySelector(`#item-${id} .collapse-arrow`);
+  const body = document.getElementById(`body-${id}`);
+  if (arrow) arrow.classList.toggle('open', item.open);
+  if (body) body.classList.toggle('open', item.open);
+}
+
+function setStatus(id, status) {
+  const item = getItem(id);
+  const prev = item.status;
+  item.status = item.status === status ? 'none' : status;
+  saveState();
+  if (item.status === 'completed' && prev !== 'completed') fireStars();
+  render();
+  checkAllDone();
+}
+
+function saveNotes(id, val) {
+  getItem(id).notes = val;
+  saveState();
+}
+
+function addLink(id) {
+  const url = document.getElementById(`link-url-${id}`).value.trim();
+  const label = document.getElementById(`link-label-${id}`).value.trim();
+  if (!url) return;
+  getItem(id).links.push({ url, label });
+  saveState();
+  document.getElementById(`links-${id}`).innerHTML = renderLinks(id);
+  document.getElementById(`link-url-${id}`).value = '';
+  document.getElementById(`link-label-${id}`).value = '';
+}
+
+function removeLink(id, idx) {
+  getItem(id).links.splice(idx, 1);
+  saveState();
+  document.getElementById(`links-${id}`).innerHTML = renderLinks(id);
+}
+
+function addTodo(id) {
+  const text = document.getElementById(`todo-text-${id}`).value.trim();
+  const time = parseInt(document.getElementById(`todo-time-${id}`).value);
+  if (!text) return;
+  if (!getItem(id).todos) getItem(id).todos = [];
+  getItem(id).todos.push({ text, time, done: false });
+  saveState();
+  document.getElementById(`todos-${id}`).innerHTML = renderTodos(id);
+  document.getElementById(`todo-text-${id}`).value = '';
+}
+
+function toggleTodo(id, idx) {
+  const item = getItem(id);
+  item.todos[idx].done = !item.todos[idx].done;
+  saveState();
+  if (item.todos[idx].done) fireConfetti();
+  document.getElementById(`todos-${id}`).innerHTML = renderTodos(id);
+  checkAllDone();
+}
+
+function deleteTodo(id, idx) {
+  getItem(id).todos.splice(idx, 1);
+  saveState();
+  document.getElementById(`todos-${id}`).innerHTML = renderTodos(id);
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function toggleInactive(btn) {
+  showInactive = !showInactive;
+  btn.textContent = showInactive ? 'on' : 'off';
+  btn.classList.toggle('active', showInactive);
+  render();
+}
+
+function setTimeFilter(t, btn) {
+  activeTimeFilter = t;
+  document.querySelectorAll('.time-filter-btn').forEach(b => b.classList.remove('active'));
+  if (t > 0) btn.classList.add('active');
+  render();
+}
+
+function checkAllDone() {
+  const all = TOMES.every(t => getItem(t.id).status === 'completed');
+  if (all) fireFire();
+}
+
+// ─── TIMERS ───────────────────────────────────────────────────────────────
+let pomoLength = 25 * 60;
+let pomoRemain = 25 * 60;
+let pomoInterval = null;
+
+function togglePomo() {
+  const btn = document.getElementById('pomo-btn');
+  if (pomoInterval) {
+    clearInterval(pomoInterval);
+    pomoInterval = null;
+    btn.textContent = 'start';
+    btn.classList.remove('running');
+  } else {
+    btn.textContent = 'pause';
+    btn.classList.add('running');
+    pomoInterval = setInterval(() => {
+      pomoRemain--;
+      updatePomoDisplay();
+      if (pomoRemain <= 0) {
+        clearInterval(pomoInterval);
+        pomoInterval = null;
+        btn.textContent = 'start';
+        btn.classList.remove('running');
+        fireConfetti();
+        new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...').play().catch(()=>{});
+      }
+    }, 1000);
+  }
+}
+
+function resetPomo() {
+  clearInterval(pomoInterval);
+  pomoInterval = null;
+  document.getElementById('pomo-btn').textContent = 'start';
+  document.getElementById('pomo-btn').classList.remove('running');
+  pomoRemain = pomoLength;
+  updatePomoDisplay();
+}
+
+function setPomoLength(m) {
+  pomoLength = m * 60;
+  pomoRemain = pomoLength;
+  clearInterval(pomoInterval);
+  pomoInterval = null;
+  document.getElementById('pomo-btn').textContent = 'start';
+  document.getElementById('pomo-btn').classList.remove('running');
+  updatePomoDisplay();
+}
+
+function updatePomoDisplay() {
+  const m = Math.floor(pomoRemain / 60).toString().padStart(2,'0');
+  const s = (pomoRemain % 60).toString().padStart(2,'0');
+  document.getElementById('pomo-display').textContent = `${m}:${s}`;
+}
+
+let cdRemain = 0;
+let cdInterval = null;
+
+function toggleCountdown() {
+  const btn = document.getElementById('countdown-btn');
+  if (cdInterval) {
+    clearInterval(cdInterval);
+    cdInterval = null;
+    btn.textContent = 'start';
+    btn.classList.remove('running');
+  } else {
+    const mins = parseInt(document.getElementById('countdown-mins').value) || 10;
+    if (cdRemain <= 0) cdRemain = mins * 60;
+    btn.textContent = 'pause';
+    btn.classList.add('running');
+    cdInterval = setInterval(() => {
+      cdRemain--;
+      updateCdDisplay();
+      if (cdRemain <= 0) {
+        clearInterval(cdInterval);
+        cdInterval = null;
+        btn.textContent = 'start';
+        btn.classList.remove('running');
+        fireConfetti();
+      }
+    }, 1000);
+  }
+}
+
+function resetCountdown() {
+  clearInterval(cdInterval);
+  cdInterval = null;
+  const mins = parseInt(document.getElementById('countdown-mins').value) || 10;
+  cdRemain = mins * 60;
+  document.getElementById('countdown-btn').textContent = 'start';
+  document.getElementById('countdown-btn').classList.remove('running');
+  updateCdDisplay();
+}
+
+function updateCdDisplay() {
+  const m = Math.floor(cdRemain / 60).toString().padStart(2,'0');
+  const s = (cdRemain % 60).toString().padStart(2,'0');
+  document.getElementById('countdown-display').textContent = `${m}:${s}`;
+}
+
+// ─── FX ───────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('fx-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function fireConfetti() {
+  const colors = ['#c9a96e','#7b9e87','#c47e7e','#8b78c9','#e8e4dc','#f0c040'];
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      type: 'confetti',
+      x: Math.random() * canvas.width,
+      y: -10,
+      vx: (Math.random() - 0.5) * 6,
+      vy: Math.random() * 4 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 8 + 4,
+      rot: Math.random() * 360,
+      rotV: (Math.random() - 0.5) * 8,
+      life: 1
+    });
+  }
+  if (!animating) animate();
+}
+
+function fireStars() {
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  for (let i = 0; i < 20; i++) {
+    const angle = (i / 20) * Math.PI * 2;
+    particles.push({
+      type: 'star',
+      x: cx, y: cy,
+      vx: Math.cos(angle) * (Math.random() * 8 + 4),
+      vy: Math.sin(angle) * (Math.random() * 8 + 4),
+      color: '#c9a96e',
+      size: Math.random() * 16 + 8,
+      life: 1
+    });
+  }
+  if (!animating) animate();
+}
+
+function fireFire() {
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      type: 'fire',
+      x: Math.random() * canvas.width,
+      y: canvas.height + 10,
+      vx: (Math.random() - 0.5) * 4,
+      vy: -(Math.random() * 8 + 4),
+      color: `hsl(${Math.random()*40+10}, 100%, ${Math.random()*30+50}%)`,
+      size: Math.random() * 20 + 10,
+      life: 1
+    });
+  }
+  if (!animating) animate();
+}
+
+let animating = false;
+function animate() {
+  animating = true;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    if (p.type === 'confetti') {
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV; p.vy += 0.15; p.life -= 0.012;
+    } else if (p.type === 'star') {
+      drawStar(ctx, p.x, p.y, 5, p.size, p.size/2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
+    } else if (p.type === 'fire') {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy; p.size *= 0.96; p.life -= 0.018;
+    }
+    ctx.restore();
+  });
+  if (particles.length > 0) requestAnimationFrame(animate);
+  else animating = false;
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+  let rot = (Math.PI / 2) * 3;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outerR);
+  for (let i = 0; i < spikes; i++) {
+    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+    rot += step;
+  }
+  ctx.lineTo(cx, cy - outerR);
+  ctx.closePath();
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+render();
+updatePomoDisplay();
+updateCdDisplay();
+</script>
+</body>
+</html>
